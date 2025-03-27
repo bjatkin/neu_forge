@@ -25,6 +25,9 @@ impl<'a> Parser<'a> {
             }
         }
 
+        // TODO: type check this before returning it
+        // actually can I even do that becuase value(and the associated types) live in the interpreter,
+        // not in the complier... Hmmmm... I'll have to think about that...
         return exprs;
     }
 
@@ -47,6 +50,29 @@ impl<'a> Parser<'a> {
                     }
                 };
                 return Some(ast::Expr::Int(i));
+            }
+            Type::Float => {
+                let tok = self.lexer.take();
+                let f = match tok.value.parse() {
+                    Ok(f) => f,
+                    Err(e) => {
+                        let value = tok.value;
+                        panic!("'{value}' is not a valid value {e}")
+                    }
+                };
+                return Some(ast::Expr::Float(f));
+            }
+            Type::Bool => {
+                let tok = self.lexer.take();
+                let b = match tok.value.as_str() {
+                    "true" => true,
+                    "false" => false,
+                    _ => {
+                        let value = tok.value;
+                        panic!("'{value}' invalid boolean value")
+                    }
+                };
+                return Some(ast::Expr::Bool(b));
             }
             Type::Identifier => {
                 let ident = self.lexer.take();

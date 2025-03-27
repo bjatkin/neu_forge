@@ -11,6 +11,8 @@ pub enum Type {
     Let,
     Identifier,
     Int,
+    Float,
+    Bool,
 }
 
 #[derive(Debug, Clone)]

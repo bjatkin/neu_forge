@@ -90,7 +90,23 @@ fn match_token(loc: usize, source: &[u8]) -> (Token, usize) {
     };
 
     // look for multi-byte tokens
-    match number_token(start + loc, source) {
+    match int_token(start + loc, source) {
+        Some(t) => {
+            let l = t.value.len();
+            return (t, start + l);
+        }
+        None => { /* continue on */ }
+    }
+
+    match float_token(start + loc, source) {
+        Some(t) => {
+            let l = t.value.len();
+            return (t, start + l);
+        }
+        None => { /* continue on */ }
+    }
+
+    match bool_token(start + loc, source) {
         Some(t) => {
             let l = t.value.len();
             return (t, start + l);
@@ -113,7 +129,7 @@ fn match_token(loc: usize, source: &[u8]) -> (Token, usize) {
 
 const VALID_NUMBERS: &[u8] = "_0123456789".as_bytes();
 
-fn number_token(loc: usize, source: &[u8]) -> Option<Token> {
+fn int_token(loc: usize, source: &[u8]) -> Option<Token> {
     if !VALID_NUMBERS.contains(&source[0]) {
         return None;
     }
@@ -127,6 +143,78 @@ fn number_token(loc: usize, source: &[u8]) -> Option<Token> {
 
     let tok = Token::from_bytes(&source, loc, Type::Int);
     return Some(tok);
+}
+
+fn float_token(loc: usize, source: &[u8]) -> Option<Token> {
+    // first byte must be a valid number
+    if !VALID_NUMBERS.contains(&source[0]) {
+        return None;
+    }
+
+    let mut leading_digits = 0;
+    let mut trailing_digits = 0;
+    let mut found_point = false;
+    for i in 1..source.len() {
+        if source[i] == b'.' && found_point {
+            // if we found more than a single point, this is not a float
+            return None;
+        }
+        if source[i] == b'.' && !found_point {
+            found_point = true;
+            continue;
+        }
+        if VALID_NUMBERS.contains(&source[i]) && !found_point {
+            leading_digits += 1;
+            continue;
+        }
+        if VALID_NUMBERS.contains(&source[i]) && found_point {
+            trailing_digits += 1;
+            continue;
+        }
+
+        // we found a non-decimal character byte
+        if leading_digits > 0 && found_point && trailing_digits > 0 {
+            let tok = Token::from_bytes(&source[0..i], loc, Type::Float);
+            return Some(tok);
+        }
+
+        // we didnt have leading digits, a single decimal point, and trailing digits so this is
+        // not a valid floating point literal
+        return None;
+    }
+
+    if leading_digits > 0 && found_point && trailing_digits > 0 {
+        let tok = Token::from_bytes(&source, loc, Type::Float);
+        return Some(tok);
+    }
+
+    return None;
+}
+
+fn bool_token(loc: usize, source: &[u8]) -> Option<Token> {
+    let true_bytes = "true".as_bytes();
+    if source.starts_with(true_bytes) && source.len() == true_bytes.len() {
+        let tok = Token::from_bytes(true_bytes, loc, Type::Bool);
+        return Some(tok);
+    }
+
+    if source.starts_with(true_bytes) && is_white_space(&source[true_bytes.len()]) {
+        let tok = Token::from_bytes(true_bytes, loc, Type::Bool);
+        return Some(tok);
+    }
+
+    let false_bytes = "false".as_bytes();
+    if source.starts_with(false_bytes) && source.len() == false_bytes.len() {
+        let tok = Token::from_bytes(false_bytes, loc, Type::Bool);
+        return Some(tok);
+    }
+
+    if source.starts_with(false_bytes) && is_white_space(&source[false_bytes.len()]) {
+        let tok = Token::from_bytes(false_bytes, loc, Type::Bool);
+        return Some(tok);
+    }
+
+    return None;
 }
 
 fn keyword_or_identifier_token(loc: usize, source: &[u8]) -> Option<Token> {
@@ -151,7 +239,7 @@ fn keyword_or_identifier_token(loc: usize, source: &[u8]) -> Option<Token> {
 }
 
 fn keyword_token(loc: usize, source: &[u8]) -> Option<Token> {
-    if has_prefix(source, "let".as_bytes()) {
+    if source.starts_with("let".as_bytes()) {
         return Some(Token {
             loc: loc,
             value: String::from("let"),
@@ -160,20 +248,6 @@ fn keyword_token(loc: usize, source: &[u8]) -> Option<Token> {
     };
 
     return None;
-}
-
-fn has_prefix(source: &[u8], prefix: &[u8]) -> bool {
-    if source.len() < prefix.len() {
-        return false;
-    }
-
-    for i in 0..prefix.len() {
-        if source[i] != prefix[i] {
-            return false;
-        }
-    }
-
-    return true;
 }
 
 const VALID_IDENT_PREFIX: &[u8] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ".as_bytes();

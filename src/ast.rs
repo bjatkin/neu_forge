@@ -5,6 +5,8 @@ pub enum Expr {
     SExpr(SExpr),
     Int(i64),
     Identifier(String),
+    Bool(bool),
+    Float(f64),
     Empty,
 }
 

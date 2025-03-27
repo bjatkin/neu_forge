@@ -30,6 +30,8 @@ impl Interp {
         match expr {
             Expr::SExpr(e) => self.interp_sexpr(e),
             Expr::Int(i) => Value::Int(*i),
+            Expr::Float(f) => Value::Float(*f),
+            Expr::Bool(b) => Value::Bool(*b),
             Expr::Identifier(name) => match self.identifiers.get(name) {
                 Some(v) => v.clone(),
                 None => panic!("unknown identifier '{name}'"),
@@ -52,7 +54,7 @@ impl Interp {
                     let arg = self.interp_expr(e);
                     match arg {
                         Value::Int(i) => sum += i,
-                        Value::None => panic!("can not add empty value"),
+                        _ => panic!("can not add non int values"),
                     }
                 }
                 return Value::Int(sum);
@@ -64,14 +66,14 @@ impl Interp {
                 };
                 let mut total = match first {
                     Value::Int(i) => i,
-                    Value::None => panic!("can not add empty value"),
+                    _ => panic!("can not add non int values"),
                 };
 
                 for e in &sexpr.args.as_slice()[1..] {
                     let arg = self.interp_expr(e);
                     match arg {
                         Value::Int(i) => total -= i,
-                        Value::None => panic!("can not add empty value"),
+                        _ => panic!("can not add non int values"),
                     }
                 }
 
@@ -84,14 +86,14 @@ impl Interp {
                 };
                 let mut total = match first {
                     Value::Int(i) => i,
-                    Value::None => panic!("can not add empty value"),
+                    _ => panic!("can not multiply non int values"),
                 };
 
                 for e in &sexpr.args.as_slice()[1..] {
                     let arg = self.interp_expr(e);
                     match arg {
                         Value::Int(i) => total *= i,
-                        Value::None => panic!("can not add empty value"),
+                        _ => panic!("can not multiply non int values"),
                     }
                 }
 
@@ -104,14 +106,14 @@ impl Interp {
                 };
                 let mut total = match first {
                     Value::Int(i) => i,
-                    Value::None => panic!("can not add empty value"),
+                    _ => panic!("can not divide an non int values"),
                 };
 
                 for e in &sexpr.args.as_slice()[1..] {
                     let arg = self.interp_expr(e);
                     match arg {
                         Value::Int(i) => total /= i,
-                        Value::None => panic!("can not add empty value"),
+                        _ => panic!("can not divide a non int values"),
                     }
                 }
 
